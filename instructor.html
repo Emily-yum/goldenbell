@@ -159,12 +159,10 @@ async function initPresetQuestions() {
 }
 
 async function loadPresetQuestions() {
-  const updates = {};
-  PRESET_QUESTIONS.forEach((q, i) => {
-    const key = push(ref(db, `rooms/${ROOM}/questions`)).key;
-    updates[`rooms/${ROOM}/questions/${key}`] = { ...q, order: i };
-  });
-  await update(ref(db), updates);
+  for (let i = 0; i < PRESET_QUESTIONS.length; i++) {
+    const q = PRESET_QUESTIONS[i];
+    await push(ref(db, `rooms/${ROOM}/questions`), { ...q, order: i });
+  }
 }
 
 initPresetQuestions();
@@ -172,6 +170,7 @@ initPresetQuestions();
 onValue(ref(db, `rooms/${ROOM}/questions`), snap => {
   questions = [];
   if (snap.exists()) snap.forEach(c => questions.push({ id: c.key, ...c.val() }));
+  questions.sort((a, b) => (a.order || 0) - (b.order || 0));
   renderQuestions();
   renderCurrentQ();
   document.getElementById('stat-total').textContent = questions.length;
