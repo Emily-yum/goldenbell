@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>골든벨 — 강사 패널</title>
+<style>
+  :root {
+    --bg: #0f0f13;
+    --surface: #1a1a22;
+    --surface2: #22222e;
+    --border: rgba(255,255,255,0.08);
+    --text: #f0f0f5;
+    --muted: #888899;
+    --gold: #f5c842;
+    --gold-dim: rgba(245,200,66,0.12);
+    --green: #4cde80;
+    --green-dim: rgba(76,222,128,0.12);
+    --red: #f05a5a;
+    --red-dim: rgba(240,90,90,0.12);
+    --blue: #5b9cf6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Pretendard', 'Noto Sans KR', sans-serif; min-height: 100vh; }
+  .topbar { display: flex; align-items: center; gap: 12px; padding: 14px 24px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .logo { font-size: 18px; font-weight: 700; color: var(--gold); letter-spacing: -0.03em; }
+  .badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+  .badge-live { background: var(--green-dim); color: var(--green); }
+  .badge-idle { background: rgba(255,255,255,0.06); color: var(--muted); }
+  .badge-waiting { background: var(--gold-dim); color: var(--gold); }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+  .main { display: grid; grid-template-columns: 380px 1fr; gap: 0; height: calc(100vh - 53px); }
+  .sidebar { background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .content { overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .section-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
+  .card { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; text-align: center; }
+  .stat-num { font-size: 28px; font-weight: 700; }
+  .stat-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .num-gold { color: var(--gold); }
+  .num-green { color: var(--green); }
+  .num-red { color: var(--red); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; font-family: inherit; transition: opacity 0.15s, transform 0.1s; }
+  .btn:hover { opacity: 0.85; }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+  .btn-gold { background: var(--gold); color: #0f0f13; }
+  .btn-green { background: var(--green); color: #0f0f13; }
+  .btn-red { background: var(--red); color: white; }
+  .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-full { width: 100%; }
+  .btn-sm { padding: 7px 12px; font-size: 12px; border-radius: 6px; }
+  .control-row { display: flex; gap: 8px; }
+  .q-form { display: flex; flex-direction: column; gap: 8px; }
+  .q-form input, .q-form textarea { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 13px; font-family: inherit; outline: none; width: 100%; }
+  .q-form input:focus, .q-form textarea:focus { border-color: var(--gold); }
+  .q-form textarea { resize: vertical; min-height: 72px; }
+  .q-form label { font-size: 11px; color: var(--muted); }
+  .q-list { display: flex; flex-direction: column; gap: 6px; }
+  .q-item { display: flex; align-items: flex-start; gap: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; transition: border-color 0.15s; }
+  .q-item.current { border-color: var(--gold); }
+  .q-item.done { opacity: 0.45; }
+  .q-idx { font-size: 13px; font-weight: 700; color: var(--gold); min-width: 22px; }
+  .q-body { flex: 1; min-width: 0; }
+  .q-text { font-size: 13px; font-weight: 500; margin-bottom: 3px; word-break: keep-all; }
+  .q-ans { font-size: 11px; color: var(--muted); }
+  .q-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  .icon-btn { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 14px; padding: 2px 4px; border-radius: 4px; }
+  .icon-btn:hover { color: var(--text); background: var(--border); }
+  .current-q-display { background: var(--gold-dim); border: 1px solid rgba(245,200,66,0.3); border-radius: 12px; padding: 16px; }
+  .current-q-label { font-size: 11px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .current-q-text { font-size: 16px; font-weight: 600; line-height: 1.5; margin-bottom: 12px; }
+  .answer-reveal { background: var(--green-dim); border: 1px solid rgba(76,222,128,0.25); border-radius: 8px; padding: 10px 14px; margin-top: 8px; }
+  .answer-reveal-label { font-size: 10px; color: var(--green); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+  .answer-reveal-text { font-size: 18px; font-weight: 700; color: var(--green); margin-top: 2px; }
+  .participants-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+  .p-card { border-radius: 8px; padding: 10px 8px; text-align: center; border: 1px solid var(--border); background: var(--surface2); }
+  .p-card.alive { border-color: rgba(76,222,128,0.3); background: var(--green-dim); }
+  .p-card.eliminated { opacity: 0.35; background: var(--red-dim); border-color: rgba(240,90,90,0.2); }
+  .p-card.correct { border-color: rgba(76,222,128,0.6); background: var(--green-dim); }
+  .p-card.wrong { border-color: rgba(240,90,90,0.4); background: var(--red-dim); }
+  .p-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; margin: 0 auto 6px; }
+  .p-name { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .p-status { font-size: 10px; margin-top: 2px; }
+  .qr-section { text-align: center; }
+  .qr-box { background: white; border-radius: 10px; padding: 12px; display: inline-block; margin-bottom: 8px; }
+  .qr-box img { display: block; }
+  .room-code { font-size: 28px; font-weight: 800; letter-spacing: 0.15em; color: var(--gold); margin-bottom: 4px; }
+  .room-url { font-size: 11px; color: var(--muted); font-family: monospace; word-break: break-all; }
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; font-size: 13px; font-weight: 500; opacity: 0; transform: translateY(10px); transition: all 0.25s; pointer-events: none; z-index: 999; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .divider { height: 1px; background: var(--border); margin: 4px 0; }
+  .no-q { font-size: 13px; color: var(--muted); text-align: center; padding: 20px; }
+  .winner-banner { background: linear-gradient(135deg, var(--gold-dim), rgba(245,200,66,0.05)); border: 2px solid var(--gold); border-radius: 12px; padding: 20px; text-align: center; }
+  .winner-title { font-size: 13px; color: var(--gold); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+  .winner-name { font-size: 32px; font-weight: 800; color: var(--gold); }
+</style>
+</head>
+<body>
+
+<!-- ── FIREBASE CONFIG (여기만 수정하세요) ── -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, push, remove, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAzyUacMwMro5Aa3hOaKyCoa7wtl8RoWr0",
+  authDomain: "goldenbell-bc803.firebaseapp.com",
+  databaseURL: "https://goldenbell-bc803-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "goldenbell-bc803",
+  storageBucket: "goldenbell-bc803.firebasestorage.app",
+  messagingSenderId: "339402292",
+  appId: "1:339402292:web:647c1c10b41f8b537cb461"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ── 상태 ──
+let gameState = { status: 'idle', currentQ: -1, answerVisible: false, roomCode: 'BELL01' };
+let questions = [];
+let participants = {};
+
+const ROOM = gameState.roomCode;
+
+// ── Firebase 리스너 ──
+onValue(ref(db, `rooms/${ROOM}/state`), snap => {
+  if (snap.exists()) { gameState = { ...gameState, ...snap.val() }; renderAll(); }
+});
+onValue(ref(db, `rooms/${ROOM}/questions`), snap => {
+  questions = [];
+  if (snap.exists()) snap.forEach(c => questions.push({ id: c.key, ...c.val() }));
+  renderQuestions();
+  renderCurrentQ();
+  document.getElementById('stat-total').textContent = questions.length;
+});
+onValue(ref(db, `rooms/${ROOM}/participants`), snap => {
+  participants = snap.exists() ? snap.val() : {};
+  renderParticipants();
+  updateStats();
+});
+
+// ── 통계 업데이트 ──
+function updateStats() {
+  const all = Object.values(participants);
+  const alive = all.filter(p => p.status !== 'eliminated').length;
+  const elim = all.filter(p => p.status === 'eliminated').length;
+  document.getElementById('stat-alive').textContent = alive;
+  document.getElementById('stat-elim').textContent = elim;
+  document.getElementById('stat-total-p').textContent = all.length;
+}
+
+// ── QR 코드 생성 ──
+function generateQR() {
+  const url = `${location.origin}/goldenbell/participant.html?room=${ROOM}`;
+  document.getElementById('room-url').textContent = url;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(url)}`;
+  document.getElementById('qr-img').src = qrUrl;
+}
+
+// ── 문제 추가 ──
+window.addQuestion = async () => {
+  const q = document.getElementById('new-q').value.trim();
+  const a = document.getElementById('new-a').value.trim();
+  if (!q || !a) { toast('문제와 정답을 모두 입력해주세요'); return; }
+  await push(ref(db, `rooms/${ROOM}/questions`), { q, a, order: Date.now() });
+  document.getElementById('new-q').value = '';
+  document.getElementById('new-a').value = '';
+  toast('문제가 추가되었어요');
+};
+
+// ── 문제 삭제 ──
+window.deleteQuestion = async (id) => {
+  await remove(ref(db, `rooms/${ROOM}/questions/${id}`));
+  toast('문제가 삭제되었어요');
+};
+
+// ── 골든벨 시작/종료 ──
+window.toggleGame = async () => {
+  if (gameState.status === 'idle') {
+    if (questions.length === 0) { toast('문제를 먼저 추가해주세요!'); return; }
+    await set(ref(db, `rooms/${ROOM}/state`), { status: 'playing', currentQ: 0, answerVisible: false });
+    toast('골든벨 시작!');
+  } else {
+    if (!confirm('골든벨을 종료하시겠어요?')) return;
+    await set(ref(db, `rooms/${ROOM}/state`), { status: 'idle', currentQ: -1, answerVisible: false });
+    toast('골든벨 종료');
+  }
+};
+
+// ── 다음 문제 ──
+window.nextQuestion = async () => {
+  const next = gameState.currentQ + 1;
+  if (next >= questions.length) { toast('마지막 문제예요!'); return; }
+  const updates = {};
+  Object.keys(participants).forEach(pid => {
+    if (participants[pid].status === 'correct') updates[`rooms/${ROOM}/participants/${pid}/status`] = 'alive';
+    if (participants[pid].status === 'wrong') updates[`rooms/${ROOM}/participants/${pid}/status`] = 'eliminated';
+  });
+  updates[`rooms/${ROOM}/state/currentQ`] = next;
+  updates[`rooms/${ROOM}/state/answerVisible`] = false;
+  await update(ref(db), updates);
+  toast(`${next + 1}번 문제로 이동`);
+};
+
+// ── 정답 공개 ──
+window.revealAnswer = async () => {
+  await update(ref(db, `rooms/${ROOM}/state`), { answerVisible: true });
+  toast('정답 공개!');
+};
+
+// ── 참여자 탈락 처리 ──
+window.eliminateParticipant = async (pid) => {
+  await update(ref(db, `rooms/${ROOM}/participants/${pid}`), { status: 'eliminated' });
+};
+
+// ── 렌더링 ──
+function renderAll() { renderCurrentQ(); renderQuestions(); renderParticipants(); }
+
+function renderCurrentQ() {
+  const el = document.getElementById('current-q-section');
+  if (gameState.status !== 'playing' || gameState.currentQ < 0 || !questions[gameState.currentQ]) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:13px;">게임이 시작되면 현재 문제가 여기에 표시돼요.</p>';
+    return;
+  }
+  const q = questions[gameState.currentQ];
+  el.innerHTML = `
+    <div class="current-q-display">
+      <div class="current-q-label">문제 ${gameState.currentQ + 1} / ${questions.length}</div>
+      <div class="current-q-text">${q.q}</div>
+      ${gameState.answerVisible ? `
+        <div class="answer-reveal">
+          <div class="answer-reveal-label">정답</div>
+          <div class="answer-reveal-text">${q.a}</div>
+        </div>` : ''}
+    </div>`;
+
+  document.getElementById('btn-next').disabled = !(!gameState.answerVisible === false);
+  document.getElementById('btn-reveal').disabled = gameState.answerVisible;
+}
+
+function renderQuestions() {
+  const el = document.getElementById('q-list');
+  if (questions.length === 0) { el.innerHTML = '<div class="no-q">아직 문제가 없어요</div>'; return; }
+  el.innerHTML = questions.map((q, i) => `
+    <div class="q-item ${i === gameState.currentQ ? 'current' : ''} ${i < gameState.currentQ ? 'done' : ''}">
+      <div class="q-idx">${i + 1}</div>
+      <div class="q-body">
+        <div class="q-text">${q.q}</div>
+        <div class="q-ans">정답: ${q.a}</div>
+      </div>
+      <div class="q-actions">
+        <button class="icon-btn" onclick="deleteQuestion('${q.id}')" title="삭제">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function avatarColor(name) {
+  const colors = ['#f5c842','#4cde80','#5b9cf6','#f05a5a','#c084fc','#fb923c','#22d3ee'];
+  let h = 0; for (let c of name) h += c.charCodeAt(0);
+  return colors[h % colors.length];
+}
+
+function renderParticipants() {
+  const el = document.getElementById('p-grid');
+  const all = Object.entries(participants);
+  if (all.length === 0) { el.innerHTML = '<p style="color:var(--muted);font-size:12px;grid-column:1/-1;">아직 참여자가 없어요. QR을 공유해주세요!</p>'; return; }
+
+  // 최후 1인 체크
+  const alive = all.filter(([,p]) => p.status !== 'eliminated');
+  if (alive.length === 1 && all.length > 1) {
+    document.getElementById('winner-section').innerHTML = `
+      <div class="winner-banner">
+        <div class="winner-title">🏆 최종 생존자</div>
+        <div class="winner-name">${alive[0][1].nickname}</div>
+      </div>`;
+  } else {
+    document.getElementById('winner-section').innerHTML = '';
+  }
+
+  el.innerHTML = all.map(([pid, p]) => {
+    const statusLabel = { alive: '생존', eliminated: '탈락', correct: '정답', wrong: '오답', waiting: '대기' }[p.status] || p.status;
+    const statusColor = { alive: 'var(--green)', eliminated: 'var(--red)', correct: 'var(--green)', wrong: 'var(--red)', waiting: 'var(--muted)' }[p.status] || 'var(--muted)';
+    const cls = ['alive','correct'].includes(p.status) ? 'alive' : p.status === 'eliminated' ? 'eliminated' : p.status === 'wrong' ? 'wrong' : '';
+    return `
+      <div class="p-card ${cls}" title="${p.nickname}">
+        <div class="p-avatar" style="background:${avatarColor(p.nickname)}22;color:${avatarColor(p.nickname)}">
+          ${p.nickname.charAt(0)}
+        </div>
+        <div class="p-name">${p.nickname}</div>
+        <div class="p-status" style="color:${statusColor}">${statusLabel}</div>
+      </div>`;
+  }).join('');
+}
+
+// ── DOM 연결 ──
+document.getElementById('btn-add-q').addEventListener('click', addQuestion);
+document.getElementById('btn-toggle').addEventListener('click', toggleGame);
+document.getElementById('btn-next').addEventListener('click', nextQuestion);
+document.getElementById('btn-reveal').addEventListener('click', revealAnswer);
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+generateQR();
+document.getElementById('room-code').textContent = ROOM;
+</script>
+
+<!-- ── HTML ── -->
+<div class="topbar">
+  <div class="logo">🔔 골든벨</div>
+  <span class="badge badge-idle" id="status-badge">강사 패널</span>
+  <div class="topbar-right">
+    룸 코드: <strong id="room-code" style="color:var(--gold);letter-spacing:0.1em;">—</strong>
+  </div>
+</div>
+
+<div class="main">
+  <!-- 사이드바: 문제 관리 + QR -->
+  <div class="sidebar">
+    <div>
+      <div class="section-label">QR 공유</div>
+      <div class="card qr-section">
+        <div class="room-code" id="room-code2">BELL01</div>
+        <div class="qr-box">
+          <img id="qr-img" src="" width="140" height="140" alt="QR코드" />
+        </div>
+        <div class="room-url" id="room-url">생성 중...</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">문제 추가</div>
+      <div class="card q-form">
+        <label>문제 내용</label>
+        <textarea id="new-q" placeholder="예: 애자일 선언의 핵심 가치는 몇 가지인가?"></textarea>
+        <label>정답</label>
+        <input id="new-a" type="text" placeholder="예: 4가지" />
+        <button class="btn btn-gold btn-full" id="btn-add-q">+ 문제 추가</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">등록된 문제 (<span id="stat-total">0</span>)</div>
+      <div class="q-list" id="q-list"></div>
+    </div>
+  </div>
+
+  <!-- 메인: 게임 컨트롤 + 참여자 -->
+  <div class="content">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-num num-gold" id="stat-total-p">0</div>
+        <div class="stat-label">전체 참여자</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num num-green" id="stat-alive">0</div>
+        <div class="stat-label">생존자</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num num-red" id="stat-elim">0</div>
+        <div class="stat-label">탈락자</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">현재 문제</div>
+      <div id="current-q-section">
+        <p style="color:var(--muted);font-size:13px;">게임이 시작되면 현재 문제가 여기에 표시돼요.</p>
+      </div>
+    </div>
+
+    <div class="control-row">
+      <button class="btn btn-gold" id="btn-toggle">▶ 골든벨 시작</button>
+      <button class="btn btn-ghost" id="btn-reveal" disabled>정답 공개</button>
+      <button class="btn btn-green" id="btn-next" disabled>다음 문제 →</button>
+    </div>
+
+    <div id="winner-section"></div>
+
+    <div>
+      <div class="section-label">참여자 현황</div>
+      <div class="participants-grid" id="p-grid">
+        <p style="color:var(--muted);font-size:12px;">아직 참여자가 없어요.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+</body>
+</html>

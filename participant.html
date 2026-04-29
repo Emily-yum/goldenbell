@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>골든벨 — 참여자</title>
+<style>
+  :root {
+    --bg: #0f0f13;
+    --surface: #1a1a22;
+    --surface2: #22222e;
+    --border: rgba(255,255,255,0.08);
+    --text: #f0f0f5;
+    --muted: #888899;
+    --gold: #f5c842;
+    --gold-dim: rgba(245,200,66,0.12);
+    --green: #4cde80;
+    --green-dim: rgba(76,222,128,0.12);
+    --red: #f05a5a;
+    --red-dim: rgba(240,90,90,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Pretendard', 'Noto Sans KR', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+  .wrap { width: 100%; max-width: 420px; }
+  .logo { text-align: center; margin-bottom: 28px; }
+  .logo-icon { font-size: 40px; display: block; margin-bottom: 6px; }
+  .logo-text { font-size: 22px; font-weight: 800; color: var(--gold); letter-spacing: -0.02em; }
+  .logo-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; border-radius: 10px; border: none; cursor: pointer; font-size: 16px; font-weight: 700; font-family: inherit; width: 100%; transition: opacity 0.15s, transform 0.1s; }
+  .btn:hover { opacity: 0.88; }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+  .btn-gold { background: var(--gold); color: #0f0f13; }
+  .btn-green { background: var(--green); color: #0f0f13; }
+  .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  input { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; color: var(--text); font-size: 16px; font-family: inherit; outline: none; width: 100%; margin-bottom: 12px; }
+  input:focus { border-color: var(--gold); }
+  .label { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .section { margin-bottom: 16px; }
+
+  /* 입장 전 */
+  #screen-join { display: flex; flex-direction: column; }
+  #screen-join h2 { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+
+  /* 대기 */
+  #screen-wait { display: none; text-align: center; }
+  .wait-icon { font-size: 48px; margin-bottom: 12px; }
+  .wait-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .wait-sub { font-size: 13px; color: var(--muted); }
+  .pulse { animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+  /* 게임 중 */
+  #screen-game { display: none; }
+  .q-number { font-size: 11px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+  .q-text { font-size: 18px; font-weight: 700; line-height: 1.5; margin-bottom: 20px; word-break: keep-all; }
+  .answer-input { font-size: 18px; margin-bottom: 16px; }
+  .submit-info { font-size: 12px; color: var(--muted); text-align: center; margin-top: 8px; }
+
+  /* 제출 완료 */
+  #screen-submitted { display: none; text-align: center; }
+  .submitted-icon { font-size: 52px; margin-bottom: 12px; }
+  .submitted-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .submitted-answer { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  .submitted-mine { font-size: 15px; font-weight: 600; color: var(--gold); }
+
+  /* 정답 공개 */
+  #screen-result { display: none; text-align: center; }
+  .result-correct { background: var(--green-dim); border: 2px solid var(--green); border-radius: 16px; padding: 28px 20px; }
+  .result-wrong { background: var(--red-dim); border: 2px solid var(--red); border-radius: 16px; padding: 28px 20px; }
+  .result-icon { font-size: 56px; margin-bottom: 8px; }
+  .result-label { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
+  .result-answer-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .result-answer { font-size: 20px; font-weight: 700; color: var(--green); margin-top: 4px; }
+  .result-mine { font-size: 13px; color: var(--muted); margin-top: 8px; }
+
+  /* 탈락 */
+  #screen-eliminated { display: none; text-align: center; padding: 20px 0; }
+  .elim-icon { font-size: 56px; margin-bottom: 12px; }
+  .elim-title { font-size: 22px; font-weight: 800; color: var(--red); margin-bottom: 8px; }
+  .elim-sub { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+  /* 우승 */
+  #screen-winner { display: none; text-align: center; padding: 20px 0; }
+  .winner-icon { font-size: 64px; margin-bottom: 12px; }
+  .winner-title { font-size: 28px; font-weight: 800; color: var(--gold); margin-bottom: 8px; }
+  .winner-sub { font-size: 14px; color: var(--muted); }
+
+  .nickname-tag { display: inline-block; background: var(--gold-dim); color: var(--gold); font-size: 13px; font-weight: 700; padding: 4px 12px; border-radius: 20px; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">
+    <span class="logo-icon">🔔</span>
+    <div class="logo-text">도전! 골든벨</div>
+    <div class="logo-sub" id="logo-room">연결 중...</div>
+  </div>
+
+  <!-- 1. 입장 -->
+  <div class="card" id="screen-join">
+    <h2>닉네임을 입력하세요</h2>
+    <div class="label">강의실에서 표시될 이름</div>
+    <input id="nickname-input" type="text" placeholder="예: 김민준" maxlength="8" autofocus />
+    <button class="btn btn-gold" id="btn-join">입장하기</button>
+  </div>
+
+  <!-- 2. 대기 -->
+  <div class="card" id="screen-wait">
+    <div class="wait-icon pulse">⏳</div>
+    <div class="wait-title">강사님을 기다리는 중...</div>
+    <div class="wait-sub" id="wait-nickname"></div>
+  </div>
+
+  <!-- 3. 게임 중 -->
+  <div class="card" id="screen-game">
+    <div id="game-nickname-tag"></div>
+    <div class="q-number" id="q-number">문제 1</div>
+    <div class="q-text" id="q-text">문제 로딩 중...</div>
+    <input class="answer-input" id="answer-input" type="text" placeholder="정답을 입력하세요" />
+    <button class="btn btn-gold" id="btn-submit">제출하기</button>
+    <div class="submit-info">제출 후 수정할 수 없어요</div>
+  </div>
+
+  <!-- 4. 제출 완료 -->
+  <div class="card" id="screen-submitted">
+    <div class="submitted-icon">✋</div>
+    <div class="submitted-title">제출 완료!</div>
+    <div class="submitted-answer">내 답안</div>
+    <div class="submitted-mine" id="my-answer-display"></div>
+    <div class="submit-info" style="margin-top:12px;">강사님의 정답 공개를 기다리세요</div>
+  </div>
+
+  <!-- 5. 정답 공개 결과 -->
+  <div id="screen-result">
+    <div id="result-box">
+    </div>
+  </div>
+
+  <!-- 6. 탈락 -->
+  <div class="card" id="screen-eliminated">
+    <div class="elim-icon">😢</div>
+    <div class="elim-title">탈락!</div>
+    <div class="elim-sub">아쉽지만 이번 문제에서 탈락했어요.<br>계속 응원해주세요! 💪</div>
+  </div>
+
+  <!-- 7. 우승 -->
+  <div class="card" id="screen-winner">
+    <div class="winner-icon">🏆</div>
+    <div class="winner-title">최후의 생존자!</div>
+    <div class="winner-sub" id="winner-msg"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, push, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// ── FIREBASE CONFIG (instructor.html과 동일하게 입력) ──
+const firebaseConfig = {
+  apiKey: "AIzaSyAzyUacMwMro5Aa3hOaKyCoa7wtl8RoWr0",
+  authDomain: "goldenbell-bc803.firebaseapp.com",
+  databaseURL: "https://goldenbell-bc803-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "goldenbell-bc803",
+  storageBucket: "goldenbell-bc803.firebasestorage.app",
+  messagingSenderId: "339402292",
+  appId: "1:339402292:web:647c1c10b41f8b537cb461"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// URL에서 룸 코드 추출
+const params = new URLSearchParams(location.search);
+const ROOM = params.get('room') || 'BELL01';
+document.getElementById('logo-room').textContent = `룸 코드: ${ROOM}`;
+
+let myPid = null;
+let myNickname = '';
+let myAnswer = '';
+let currentScreen = 'join';
+let lastQIndex = -1;
+
+function showScreen(id) {
+  ['screen-join','screen-wait','screen-game','screen-submitted','screen-result','screen-eliminated','screen-winner']
+    .forEach(s => document.getElementById(s).style.display = 'none');
+  document.getElementById(id).style.display = id === 'screen-result' ? 'block' : (id === 'screen-join' ? 'flex' : 'block');
+  currentScreen = id;
+}
+
+// ── 입장 ──
+document.getElementById('btn-join').addEventListener('click', async () => {
+  const nick = document.getElementById('nickname-input').value.trim();
+  if (!nick) return;
+  myNickname = nick;
+  const pRef = push(ref(db, `rooms/${ROOM}/participants`));
+  myPid = pRef.key;
+  await set(pRef, { nickname: nick, status: 'waiting', answer: '', joinedAt: Date.now() });
+  document.getElementById('wait-nickname').textContent = `안녕하세요, ${nick}님!`;
+  showScreen('screen-wait');
+});
+
+// ── 답안 제출 ──
+document.getElementById('btn-submit').addEventListener('click', async () => {
+  const ans = document.getElementById('answer-input').value.trim();
+  if (!ans) return;
+  myAnswer = ans;
+  await update(ref(db, `rooms/${ROOM}/participants/${myPid}`), { answer: ans, status: 'answered' });
+  document.getElementById('my-answer-display').textContent = ans;
+  showScreen('screen-submitted');
+});
+
+// ── 게임 상태 리스너 ──
+onValue(ref(db, `rooms/${ROOM}/state`), async snap => {
+  if (!snap.exists() || !myPid) return;
+  const state = snap.val();
+
+  // 탈락 여부 먼저 확인
+  const pSnap = await get(ref(db, `rooms/${ROOM}/participants/${myPid}`));
+  const me = pSnap.exists() ? pSnap.val() : null;
+  if (me && me.status === 'eliminated') { showScreen('screen-eliminated'); return; }
+
+  if (state.status === 'idle') {
+    if (currentScreen !== 'join') showScreen('screen-wait');
+    return;
+  }
+
+  if (state.status === 'playing') {
+    // 새 문제로 넘어왔을 때
+    if (state.currentQ !== lastQIndex) {
+      lastQIndex = state.currentQ;
+      myAnswer = '';
+      document.getElementById('answer-input').value = '';
+
+      // 문제 가져오기
+      const qSnap = await get(ref(db, `rooms/${ROOM}/questions`));
+      if (!qSnap.exists()) return;
+      const qArr = [];
+      qSnap.forEach(c => qArr.push({ id: c.key, ...c.val() }));
+      const q = qArr[state.currentQ];
+      if (!q) return;
+
+      document.getElementById('q-number').textContent = `문제 ${state.currentQ + 1} / ${qArr.length}`;
+      document.getElementById('q-text').textContent = q.q;
+      document.getElementById('game-nickname-tag').innerHTML = `<span class="nickname-tag">${myNickname}</span>`;
+      document.getElementById('btn-submit').disabled = false;
+      showScreen('screen-game');
+    }
+
+    // 정답 공개
+    if (state.answerVisible && me) {
+      const qSnap = await get(ref(db, `rooms/${ROOM}/questions`));
+      const qArr = [];
+      qSnap.forEach(c => qArr.push({ id: c.key, ...c.val() }));
+      const correctAns = qArr[state.currentQ]?.a || '';
+
+      const isCorrect = me.answer?.trim() !== '' && me.status !== 'eliminated';
+      document.getElementById('result-box').innerHTML = isCorrect ? `
+        <div class="result-correct">
+          <div class="result-icon">✅</div>
+          <div class="result-label" style="color:var(--green)">정답!</div>
+          <div class="result-answer-label">정답</div>
+          <div class="result-answer">${correctAns}</div>
+          <div class="result-mine">내 답안: ${me.answer}</div>
+        </div>` : `
+        <div class="result-wrong">
+          <div class="result-icon">❌</div>
+          <div class="result-label" style="color:var(--red)">탈락...</div>
+          <div class="result-answer-label">정답</div>
+          <div class="result-answer" style="color:var(--red)">${correctAns}</div>
+          <div class="result-mine">내 답안: ${me.answer || '(미제출)'}</div>
+        </div>`;
+      showScreen('screen-result');
+    }
+  }
+});
+
+// ── 내 참여자 상태 리스너 ──
+onValue(ref(db, `rooms/${ROOM}/participants/${myPid}`), snap => {
+  if (!myPid || !snap.exists()) return;
+  const me = snap.val();
+  if (me.status === 'eliminated' && currentScreen !== 'screen-result') {
+    showScreen('screen-eliminated');
+  }
+});
+
+// ── 우승자 감지 ──
+onValue(ref(db, `rooms/${ROOM}/participants`), snap => {
+  if (!myPid || !snap.exists()) return;
+  const all = [];
+  snap.forEach(c => all.push({ id: c.key, ...c.val() }));
+  const alive = all.filter(p => p.status !== 'eliminated');
+  if (alive.length === 1 && all.length > 1 && alive[0].id === myPid) {
+    document.getElementById('winner-msg').textContent = `축하합니다, ${myNickname}님! 🎉 끝까지 살아남으셨어요!`;
+    showScreen('screen-winner');
+  }
+});
+</script>
+</body>
+</html>

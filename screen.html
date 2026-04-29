@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>골든벨 — 강의실 스크린</title>
+<style>
+  :root {
+    --bg: #08080d;
+    --surface: #0f0f18;
+    --border: rgba(255,255,255,0.06);
+    --text: #f0f0f5;
+    --muted: rgba(255,255,255,0.35);
+    --gold: #f5c842;
+    --gold-dim: rgba(245,200,66,0.10);
+    --green: #4cde80;
+    --green-dim: rgba(76,222,128,0.10);
+    --red: #f05a5a;
+    --red-dim: rgba(240,90,90,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text); font-family: 'Pretendard', 'Noto Sans KR', sans-serif; overflow: hidden; }
+  .screen { display: grid; grid-template-columns: 1fr 1fr; height: 100vh; }
+
+  /* ── 왼쪽: 문제 영역 ── */
+  .left { display: flex; flex-direction: column; padding: 40px 44px; border-right: 1px solid var(--border); background: var(--surface); position: relative; overflow: hidden; }
+  .left::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 20% 50%, rgba(245,200,66,0.04) 0%, transparent 70%); pointer-events: none; }
+  .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+  .logo-left { font-size: 20px; font-weight: 800; color: var(--gold); letter-spacing: -0.02em; }
+  .live-dot { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--green); font-weight: 600; }
+  .live-dot::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+  .q-meta { font-size: 13px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 16px; opacity: 0.8; }
+  .q-main { font-size: clamp(20px, 3vw, 36px); font-weight: 700; line-height: 1.45; flex: 1; display: flex; align-items: center; word-break: keep-all; }
+  .answer-area { margin-top: auto; }
+  .answer-divider { height: 1px; background: var(--border); margin-bottom: 20px; }
+  .answer-label { font-size: 11px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 8px; }
+  .answer-text { font-size: clamp(22px, 3vw, 40px); font-weight: 800; color: var(--green); line-height: 1.3; }
+  .answer-hidden { font-size: 14px; color: var(--muted); font-style: italic; }
+  .bottom-bar { display: flex; align-items: center; justify-content: space-between; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .stat-pill { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; }
+  .stat-alive { color: var(--green); }
+  .stat-elim { color: var(--red); }
+
+  /* ── 오른쪽: 참여자 그리드 ── */
+  .right { padding: 24px; overflow: hidden; display: flex; flex-direction: column; }
+  .right-header { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 14px; }
+  .p-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; overflow-y: auto; flex: 1; align-content: start; }
+  .p-tile { border-radius: 10px; aspect-ratio: 3/2.5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 1px solid var(--border); background: rgba(255,255,255,0.03); transition: all 0.3s ease; position: relative; overflow: hidden; }
+  .p-tile.alive { border-color: rgba(76,222,128,0.2); background: rgba(76,222,128,0.05); }
+  .p-tile.correct { border-color: rgba(76,222,128,0.6); background: rgba(76,222,128,0.12); }
+  .p-tile.wrong { border-color: rgba(240,90,90,0.4); background: rgba(240,90,90,0.08); }
+  .p-tile.answered { border-color: rgba(245,200,66,0.4); background: rgba(245,200,66,0.07); }
+  .p-tile.eliminated { opacity: 0.2; filter: grayscale(1); }
+  .p-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; }
+  .p-name { font-size: 10px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px; text-align: center; }
+  .p-status { font-size: 16px; line-height: 1; }
+  .p-tile.winner { border-color: var(--gold); background: var(--gold-dim); animation: winner-glow 1s infinite alternate; }
+  @keyframes winner-glow { from { box-shadow: 0 0 0 0 rgba(245,200,66,0); } to { box-shadow: 0 0 20px 4px rgba(245,200,66,0.3); } }
+
+  /* 대기/시작 전 화면 */
+  .idle-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 12px; }
+  .idle-icon { font-size: 56px; }
+  .idle-title { font-size: 24px; font-weight: 700; color: var(--gold); }
+  .idle-sub { font-size: 14px; color: var(--muted); }
+  .room-code-display { font-size: 40px; font-weight: 800; letter-spacing: 0.2em; color: var(--gold); margin: 8px 0; }
+
+  /* 우승자 오버레이 */
+  .winner-overlay { display: none; position: fixed; inset: 0; background: rgba(8,8,13,0.92); z-index: 100; align-items: center; justify-content: center; flex-direction: column; gap: 16px; }
+  .winner-overlay.show { display: flex; }
+  .wo-icon { font-size: 80px; animation: bounce 0.6s infinite alternate; }
+  @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-16px); } }
+  .wo-title { font-size: 18px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.1em; }
+  .wo-name { font-size: 60px; font-weight: 800; color: var(--gold); }
+</style>
+</head>
+<body>
+
+<div class="screen" id="idle-view">
+  <div class="left">
+    <div class="idle-screen">
+      <div class="idle-icon">🔔</div>
+      <div class="idle-title">도전! 골든벨</div>
+      <div class="idle-sub">강사님이 시작하면 자동으로 시작돼요</div>
+      <div class="idle-sub" style="margin-top:8px;">룸 코드</div>
+      <div class="room-code-display" id="idle-room-code">—</div>
+      <div style="font-size:13px; color:var(--muted);" id="idle-url">참여 URL 로딩 중...</div>
+    </div>
+  </div>
+  <div class="right">
+    <div class="right-header">참여자 대기 중</div>
+    <div class="p-grid" id="p-grid-idle"></div>
+  </div>
+</div>
+
+<div class="screen" id="game-view" style="display:none;">
+  <div class="left">
+    <div class="top-bar">
+      <div class="logo-left">🔔 도전! 골든벨</div>
+      <div class="live-dot">LIVE</div>
+    </div>
+    <div class="q-meta" id="q-meta">문제 1</div>
+    <div class="q-main" id="q-main">문제 로딩 중...</div>
+    <div class="answer-area">
+      <div class="answer-divider"></div>
+      <div class="answer-label">정답</div>
+      <div id="answer-display" class="answer-hidden">강사님이 정답을 공개하면 표시돼요</div>
+    </div>
+    <div class="bottom-bar">
+      <span class="stat-pill stat-alive">생존 <span id="cnt-alive">—</span>명</span>
+      <span class="stat-pill stat-elim">탈락 <span id="cnt-elim">—</span>명</span>
+      <span class="stat-pill" style="color:var(--muted);">제출 <span id="cnt-answered">—</span>명</span>
+    </div>
+  </div>
+  <div class="right">
+    <div class="right-header">참여자 현황</div>
+    <div class="p-grid" id="p-grid-game"></div>
+  </div>
+</div>
+
+<div class="winner-overlay" id="winner-overlay">
+  <div class="wo-icon">🏆</div>
+  <div class="wo-title">최후의 생존자</div>
+  <div class="wo-name" id="wo-name">—</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// ── FIREBASE CONFIG ──
+const firebaseConfig = {
+  apiKey: "AIzaSyAzyUacMwMro5Aa3hOaKyCoa7wtl8RoWr0",
+  authDomain: "goldenbell-bc803.firebaseapp.com",
+  databaseURL: "https://goldenbell-bc803-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "goldenbell-bc803",
+  storageBucket: "goldenbell-bc803.firebasestorage.app",
+  messagingSenderId: "339402292",
+  appId: "1:339402292:web:647c1c10b41f8b537cb461"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const params = new URLSearchParams(location.search);
+const ROOM = params.get('room') || 'BELL01';
+
+document.getElementById('idle-room-code').textContent = ROOM;
+document.getElementById('idle-url').textContent = `${location.origin}/goldenbell/participant.html?room=${ROOM}`;
+
+let questions = [];
+let participants = {};
+let gameState = { status: 'idle', currentQ: -1, answerVisible: false };
+
+function avatarColor(name) {
+  const colors = ['#f5c842','#4cde80','#5b9cf6','#f05a5a','#c084fc','#fb923c','#22d3ee'];
+  let h = 0; for (let c of name) h += c.charCodeAt(0);
+  return colors[h % colors.length];
+}
+
+function renderParticipantTile(p, isGame) {
+  const statusIcon = { alive:'', correct:'✓', wrong:'✗', answered:'📝', eliminated:'✗', waiting:'' }[p.status] || '';
+  const cls = ['alive','correct','wrong','answered','eliminated'].includes(p.status) ? p.status : '';
+  const color = avatarColor(p.nickname);
+  return `
+    <div class="p-tile ${cls}">
+      <div class="p-avatar" style="background:${color}20;color:${color}">${p.nickname.charAt(0)}</div>
+      <div class="p-name">${p.nickname}</div>
+      ${statusIcon ? `<div class="p-status">${statusIcon}</div>` : ''}
+    </div>`;
+}
+
+function renderGrid(gridId) {
+  const el = document.getElementById(gridId);
+  const all = Object.values(participants);
+  if (all.length === 0) { el.innerHTML = '<p style="color:rgba(255,255,255,0.2);font-size:12px;grid-column:1/-1;">대기 중...</p>'; return; }
+  el.innerHTML = all.map(p => renderParticipantTile(p, gridId === 'p-grid-game')).join('');
+}
+
+function updateStats() {
+  const all = Object.values(participants);
+  const alive = all.filter(p => !['eliminated'].includes(p.status)).length;
+  const elim = all.filter(p => p.status === 'eliminated').length;
+  const answered = all.filter(p => p.status === 'answered').length;
+  document.getElementById('cnt-alive').textContent = alive;
+  document.getElementById('cnt-elim').textContent = elim;
+  document.getElementById('cnt-answered').textContent = answered;
+
+  // 우승자 감지
+  const livingAll = all.filter(p => p.status !== 'eliminated');
+  if (livingAll.length === 1 && all.length > 1) {
+    document.getElementById('wo-name').textContent = livingAll[0].nickname;
+    document.getElementById('winner-overlay').classList.add('show');
+  }
+}
+
+// ── 게임 상태 리스너 ──
+onValue(ref(db, `rooms/${ROOM}/state`), snap => {
+  if (!snap.exists()) return;
+  gameState = snap.val();
+
+  if (gameState.status === 'playing') {
+    document.getElementById('idle-view').style.display = 'none';
+    document.getElementById('game-view').style.display = 'grid';
+  } else {
+    document.getElementById('idle-view').style.display = 'grid';
+    document.getElementById('game-view').style.display = 'none';
+    document.getElementById('winner-overlay').classList.remove('show');
+  }
+
+  if (gameState.status === 'playing' && questions[gameState.currentQ]) {
+    const q = questions[gameState.currentQ];
+    document.getElementById('q-meta').textContent = `문제 ${gameState.currentQ + 1} / ${questions.length}`;
+    document.getElementById('q-main').textContent = q.q;
+
+    if (gameState.answerVisible) {
+      document.getElementById('answer-display').className = 'answer-text';
+      document.getElementById('answer-display').textContent = q.a;
+    } else {
+      document.getElementById('answer-display').className = 'answer-hidden';
+      document.getElementById('answer-display').textContent = '강사님이 정답을 공개하면 표시돼요';
+    }
+  }
+  renderGrid('p-grid-game');
+  updateStats();
+});
+
+// ── 문제 리스너 ──
+onValue(ref(db, `rooms/${ROOM}/questions`), snap => {
+  questions = [];
+  if (snap.exists()) snap.forEach(c => questions.push({ id: c.key, ...c.val() }));
+});
+
+// ── 참여자 리스너 ──
+onValue(ref(db, `rooms/${ROOM}/participants`), snap => {
+  participants = snap.exists() ? snap.val() : {};
+  renderGrid('p-grid-idle');
+  renderGrid('p-grid-game');
+  updateStats();
+});
+</script>
+</body>
+</html>
