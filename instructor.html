@@ -195,12 +195,31 @@ function generateQR() {
 // ── 문제 추가 ──
 window.addQuestion = async () => {
   const q = document.getElementById('new-q').value.trim();
-  const a = document.getElementById('new-a').value.trim();
-  if (!q || !a) { toast('문제와 정답을 모두 입력해주세요'); return; }
-  await push(ref(db, `rooms/${ROOM}/questions`), { q, a, order: Date.now() });
-  document.getElementById('new-q').value = '';
-  document.getElementById('new-a').value = '';
+  const o1 = document.getElementById('new-o1').value.trim();
+  const o2 = document.getElementById('new-o2').value.trim();
+  const o3 = document.getElementById('new-o3').value.trim();
+  const o4 = document.getElementById('new-o4').value.trim();
+  const ansIdx = parseInt(document.getElementById('new-ans-idx').value);
+  if (!q || !o1 || !o2 || !o3 || !o4) { toast('문제와 보기 4개를 모두 입력해주세요'); return; }
+  const options = [o1, o2, o3, o4];
+  const a = options[ansIdx];
+  await push(ref(db, `rooms/${ROOM}/questions`), { q, options, a, order: Date.now() });
+  ['new-q','new-o1','new-o2','new-o3','new-o4'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('new-ans-idx').value = '0';
   toast('문제가 추가되었어요');
+};
+
+// ── 데이터 초기화 + 문제 재등록 ──
+window.resetAndReload = async () => {
+  if (!confirm('기존 문제와 참여자 데이터를 모두 삭제하고 기본 20문제를 다시 등록할까요?')) return;
+  await remove(ref(db, `rooms/${ROOM}`));
+  toast('초기화 중...');
+  setTimeout(async () => {
+    for (const q of PRESET_QUESTIONS) {
+      await push(ref(db, `rooms/${ROOM}/questions`), { ...q, order: Date.now() });
+    }
+    toast('20문제 등록 완료! 🎉');
+  }, 500);
 };
 
 // ── 문제 삭제 ──
@@ -327,11 +346,24 @@ function renderParticipants() {
   }).join('');
 }
 
+// ── 문제 초기화 ──
+window.resetQuestions = async () => {
+  if (!confirm('기존 문제를 모두 삭제하고 20문제를 다시 등록할까요?')) return;
+  await remove(ref(db, `rooms/${ROOM}/questions`));
+  await remove(ref(db, `rooms/${ROOM}/participants`));
+  await remove(ref(db, `rooms/${ROOM}/state`));
+  for (const q of PRESET_QUESTIONS) {
+    await push(ref(db, `rooms/${ROOM}/questions`), { ...q, order: Date.now() });
+  }
+  toast('20문제가 새로 등록되었어요!');
+};
+
 // ── DOM 연결 ──
 document.getElementById('btn-add-q').addEventListener('click', addQuestion);
 document.getElementById('btn-toggle').addEventListener('click', toggleGame);
 document.getElementById('btn-next').addEventListener('click', nextQuestion);
 document.getElementById('btn-reveal').addEventListener('click', revealAnswer);
+document.getElementById('btn-reset').addEventListener('click', resetQuestions);
 
 function toast(msg) {
   const t = document.getElementById('toast');
@@ -370,10 +402,33 @@ document.getElementById('room-code').textContent = ROOM;
       <div class="section-label">문제 추가</div>
       <div class="card q-form">
         <label>문제 내용</label>
-        <textarea id="new-q" placeholder="예: 애자일 선언의 핵심 가치는 몇 가지인가?"></textarea>
-        <label>정답</label>
-        <input id="new-a" type="text" placeholder="예: 4가지" />
+        <textarea id="new-q" placeholder="예: 예약 조회 범위 정책으로 옳은 것은?"></textarea>
+        <label>A 보기</label>
+        <input id="new-o1" type="text" placeholder="보기 A" />
+        <label>B 보기</label>
+        <input id="new-o2" type="text" placeholder="보기 B" />
+        <label>C 보기</label>
+        <input id="new-o3" type="text" placeholder="보기 C" />
+        <label>D 보기</label>
+        <input id="new-o4" type="text" placeholder="보기 D" />
+        <label>정답 선택</label>
+        <select id="new-ans-idx" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px;font-family:inherit;width:100%;margin-bottom:4px;">
+          <option value="0">A</option>
+          <option value="1">B</option>
+          <option value="2">C</option>
+          <option value="3">D</option>
+        </select>
         <button class="btn btn-gold btn-full" id="btn-add-q">+ 문제 추가</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">초기화</div>
+      <div class="card">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">문제/참여자 데이터를 모두 삭제하고<br>기본 20문제를 다시 등록해요.</p>
+        <button class="btn btn-red btn-full" onclick="resetAndReload()">🔄 초기화 및 문제 재등록</button>
+      </div>
+    </div>
       </div>
     </div>
 
@@ -411,6 +466,9 @@ document.getElementById('room-code').textContent = ROOM;
       <button class="btn btn-gold" id="btn-toggle">▶ 골든벨 시작</button>
       <button class="btn btn-ghost" id="btn-reveal" disabled>정답 공개</button>
       <button class="btn btn-green" id="btn-next" disabled>다음 문제 →</button>
+    </div>
+    <div style="margin-top:4px;">
+      <button class="btn btn-red" id="btn-reset" style="font-size:12px;padding:8px 14px;width:auto;">🔄 문제 초기화 (20문제 재등록)</button>
     </div>
 
     <div id="winner-section"></div>
