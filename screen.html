@@ -64,6 +64,8 @@
   .idle-title { font-size: 24px; font-weight: 700; color: var(--gold); }
   .idle-sub { font-size: 14px; color: var(--muted); }
   .room-code-display { font-size: 40px; font-weight: 800; letter-spacing: 0.2em; color: var(--gold); margin: 8px 0; }
+  .qr-wrap { background: white; border-radius: 16px; padding: 14px; margin: 4px 0; }
+  .qr-wrap img { display: block; border-radius: 6px; }
 
   /* 우승자 오버레이 */
   .winner-overlay { display: none; position: fixed; inset: 0; background: rgba(8,8,13,0.92); z-index: 100; align-items: center; justify-content: center; flex-direction: column; gap: 16px; }
@@ -81,10 +83,12 @@
     <div class="idle-screen">
       <div class="idle-icon">🔔</div>
       <div class="idle-title">도전! 골든벨</div>
-      <div class="idle-sub">강사님이 시작하면 자동으로 시작돼요</div>
-      <div class="idle-sub" style="margin-top:8px;">룸 코드</div>
+      <div class="idle-sub">QR을 스캔해서 참여하세요!</div>
+      <div class="qr-wrap">
+        <img id="idle-qr" src="" width="180" height="180" alt="QR코드" />
+      </div>
       <div class="room-code-display" id="idle-room-code">—</div>
-      <div style="font-size:13px; color:var(--muted);" id="idle-url">참여 URL 로딩 중...</div>
+      <div style="font-size:12px; color:var(--muted); max-width:300px; text-align:center; word-break:break-all;" id="idle-url">참여 URL 로딩 중...</div>
     </div>
   </div>
   <div class="right">
@@ -146,7 +150,9 @@ const params = new URLSearchParams(location.search);
 const ROOM = params.get('room') || 'BELL01';
 
 document.getElementById('idle-room-code').textContent = ROOM;
-document.getElementById('idle-url').textContent = `${location.origin}/goldenbell/participant.html?room=${ROOM}`;
+const participantUrl = `${location.origin}/goldenbell/participant.html?room=${ROOM}`;
+document.getElementById('idle-url').textContent = participantUrl;
+document.getElementById('idle-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(participantUrl)}`;
 
 let questions = [];
 let participants = {};
